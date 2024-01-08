@@ -1,0 +1,35 @@
+<a id="download" style="display:none;"></a>
+<script>
+    window.addEventListener("message", (ev) => {
+        const { type, payload: { componentPropertyDefinitions, name, descriptions } } = ev.data.pluginMessage;
+
+        if (type === "EXPORT_TYPE_DEFINITIONS") {
+            const entries = Object.entries(componentPropertyDefinitions).map(([propertyName, { type, variantOptions }]) => {
+                switch (type) {
+                    case "BOOLEAN":
+                        return [propertyName, "boolean"]
+                    case "INSTANCE_SWAP":
+                        return [propertyName, "ReactNode"]
+                    case "TEXT":
+                        return [propertyName, "string"]
+                    case "VARIANT":
+                        if (variantOptions.length === 2 && variantOptions.every(option => option === "true" || option === "false")) {
+                            return [propertyName, "boolean"]
+                        } else {
+                            return [propertyName, variantOptions.map(option => `'${option}'`).join(" | ")]
+                        }
+                }
+            })
+
+            const str = entries.map(([propertyName, value]) => {
+                return `${propertyName.split("#")[0].toLowerCase()}: ${value}; ${descriptions[propertyName] ? `\n\t/**\n\t * ${descriptions[propertyName]}\n\t */` : ""}`
+            }).join("\n\t")
+
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(`export interface ${name} {\n\t${str}\n}`)
+            const dl = document.querySelector("#download")
+            dl.setAttribute("href", dataStr)
+            dl.setAttribute("download", "types.ts");
+            dl.click();
+        }
+    })
+</script>
